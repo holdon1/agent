@@ -1,0 +1,58 @@
+<mxfile host="Electron">
+  <diagram name="第 1 页" id="249woQ6S02cGq129fBgI">
+    <mxGraphModel dx="1454" dy="871" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3300" pageHeight="4681" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="302" width="235" x="79" y="531.8199999999999" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-4" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="用户输入层：Message层" vertex="1">
+          <mxGeometry height="31" width="147" x="123" y="531" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="59.33" width="220" x="84" y="562" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="66.6" width="225" x="84" y="646.77" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="64.18" width="221" x="84" y="732.74" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-16" parent="1" style="text;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: Helvetica; font-size: 12px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: center; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(236, 236, 236); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;&quot;&gt;SystemMessage&lt;/span&gt;" vertex="1">
+          <mxGeometry height="36" width="117" x="86.00179809570312" y="561.9992251586914" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-17" parent="1" style="text;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: Helvetica; font-size: 12px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: center; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(236, 236, 236); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;&quot;&gt;HumanMessage&lt;/span&gt;" vertex="1">
+          <mxGeometry height="36" width="115" x="88.00179809570312" y="646.7692251586914" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-18" parent="1" style="text;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: Helvetica; font-size: 12px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: center; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(236, 236, 236); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;&quot;&gt;AIMessage&lt;/span&gt;" vertex="1">
+          <mxGeometry height="36" width="88" x="88.00179809570312" y="732.7392251586914" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-21" parent="1" style="whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="305.18" width="251" x="460" y="531.82" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-22" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Prompt" vertex="1">
+          <mxGeometry height="30" width="60" x="547" y="532" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="60" width="169" x="464" y="561.33" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-25" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="42" width="171" x="464" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-26" parent="1" style="text;whiteSpace=wrap;html=1;" value="&lt;div style=&quot;background-color: rgb(255, 255, 255); color: rgb(0, 0, 0);&quot;&gt;&lt;pre style=&quot;font-size: 9.8pt;&quot;&gt;&lt;font face=&quot;Helvetica&quot;&gt;ChatPromptTemplate&lt;/font&gt;&lt;/pre&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="42.5" width="128" x="468" y="565.5" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-28" parent="1" style="whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="362" width="337" x="59" y="1411" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-29" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="RAG" vertex="1">
+          <mxGeometry height="30" width="60" x="68" y="1422" as="geometry" />
+        </mxCell>
+        <mxCell id="z0o1ONSchQ2q8sPP__V_-30" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="①读取外部文档（数据）&lt;div&gt;②获取嵌入模型&lt;br&gt;③通过嵌入模型将外部数据向量化并存入向量数据库&lt;/div&gt;&lt;div&gt;④通过向量数据库对象进行检索（相似度检索，分数检索）&lt;/div&gt;&lt;div&gt;⑤向量数据库对象转换成runnable链对象&lt;/div&gt;" vertex="1">
+          <mxGeometry height="164" width="169" x="66" y="1458" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

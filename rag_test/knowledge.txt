@@ -1,0 +1,9 @@
+Python 是一种高级编程语言。
+
+FastAPI 是一个基于 Python 的现代 Web 框架。
+
+Redis 是一种内存数据库，常用于缓存。
+
+Docker 是一种容器化技术。
+
+RAG 是 Retrieval Augmented Generation。
