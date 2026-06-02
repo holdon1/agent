@@ -7,13 +7,15 @@ from langchain_core.messages import (
 )
 
 from langchain_core.tools import tool
-from langchain_anthropic import ChatAnthropic
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, END,START
 from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode
+from langgraph.prebuilt import ToolNode,tools_condition
 from dotenv import load_dotenv
+
+
+
 load_dotenv()
 
 import subprocess
@@ -27,11 +29,9 @@ import os
 class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
-
 # =========================
 # Tool
 # =========================
-
 @tool
 def bash(command: str) -> str:
     """Run a shell command."""
@@ -57,102 +57,88 @@ def bash(command: str) -> str:
 
     except Exception as e:
         return str(e)
-
-
 tools = [bash]
-
-
 # =========================
 # Model
 # =========================
-
-llm = ChatGoogleGenerativeAI(model='gemini-2.5-flash')
-
+llm = ChatOpenAI(
+    model="glm-4-flash",
+    api_key=os.getenv("ZHIPU_API_KEY"),
+    base_url=os.getenv("ZHIPU_BASE_URL"),
+    temperature=0.5
+)
 llm_with_tools = llm.bind_tools(tools)
 
+# LLM节点
+def chatbot(state: AgentState):
 
-# =========================
-# Agent Node
-# =========================
+    response = llm_with_tools.invoke(state["messages"])
+    print("\n===== tool_calls =====")
+    print(response.tool_calls)
 
-SYSTEM = f"""
-You are a coding agent at {os.getcwd()}.
-Use bash to solve tasks.
-Act, don't explain.
-"""
-
-
-def call_model(state: AgentState):
-
-    response = llm_with_tools.invoke([
-        SystemMessage(content=SYSTEM),
-        *state["messages"]
-    ])
-
-    return {
-        "messages": [response]
-    }
+    return {"messages": [response]}
+# 条件边tool_condition
 
 
 # =========================
-# Continue Logic
+# 构造器
 # =========================
-
-def should_continue(state: AgentState):
-
-    last_message = state["messages"][-1]
-
-    # 是否调用tool
-    if last_message.tool_calls:
-        return "tools"
-
-    return END
-
-
-# =========================
-# Graph
-# =========================
-
 builder = StateGraph(AgentState)
 
-builder.add_node("agent", call_model)
-
-builder.add_node(
-    "tools",
-    ToolNode(tools)
-)
-
-builder.set_entry_point("agent")
-
-builder.add_conditional_edges(
-    "agent",
-    should_continue,
-)
-
-builder.add_edge("tools", "agent")
+# =========================
+# 注册节点
+# =========================
+builder.add_node("chatbot", chatbot)
+builder.add_node("tools",ToolNode(tools))
+# =========================
+# 注册边
+# =========================
+# 开始边
+builder.add_edge(START,"chatbot")
+# chatbot到条件边（结束or使用工具）
+builder.add_conditional_edges("chatbot",tools_condition,)
+# 工具调用到chatbot边
+builder.add_edge("tools","chatbot")
 
 graph = builder.compile()
 
+if __name__ == '__main__':
+    SYSTEM = """
+    你是一个终端Agent。
 
-# =========================
-# Run
-# =========================
+    对于以下任务：
 
-if __name__ == "__main__":
+    - 文件查询
+    - 目录查询
+    - 系统信息查询
+    - Shell命令执行
 
-    while True:
+    必须调用bash工具。
 
-        query = input(">> ")
-
-        if query in ["q", "exit"]:
-            break
-
-        result = graph.invoke({
+    禁止直接回答。
+    禁止输出命令。
+    必须执行工具。
+    """
+    events = graph.stream(
+        {
             "messages": [
-                HumanMessage(content=query)
+                SystemMessage(content=SYSTEM),
+                HumanMessage(content="当前目录有几个文件？")
             ]
-        })
+        },
+        stream_mode="values"
+    )
 
-        print("\n=== FINAL ANSWER ===\n")
+    for event in events:
+        messages = event.get("messages", [])
+        if messages:
+            last = messages[-1]
 
-        print(result["messages"][-1].content)
+            # 只打印最终 AI 回复
+            if last.type == "ai" and not last.tool_calls:
+                print("\n🤖 FINAL ANSWER:")
+                print(last.content)
+
+
+
+

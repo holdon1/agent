@@ -2,7 +2,6 @@ import os
 from typing import Annotated
 
 from langchain_core.messages import HumanMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from langgraph.types import interrupt
