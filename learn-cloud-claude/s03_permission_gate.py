@@ -63,18 +63,19 @@ def permission_gate(agentState:AgentState):
     # 审批
     if level == PermissionLevel.ASK:
         print("Requesting user approval...")
-        approval = interrupt({
-
-            "tool": tool_call["name"],
-            "args": tool_call["args"]
-        })
+        approval = interrupt(
+            {
+                "tool": tool_call["name"],
+                "args": tool_call["args"]
+            }
+        )
 
         if approval:
             return {}
 
         return {
             "messages": [
-                AIMessage(content="User rejected operation.")
+                AIMessage(content="User rejected operation")
             ]
         }
 # 权限路由

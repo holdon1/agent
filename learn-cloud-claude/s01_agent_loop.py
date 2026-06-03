@@ -28,7 +28,7 @@ import os
 
 class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
-
+    pend_tool: dict|None
 
 # =========================
 # Tool

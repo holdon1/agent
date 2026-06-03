@@ -182,43 +182,48 @@ if __name__ == '__main__':
     必须执行工具。
     """
     config = {"configurable": {"thread_id": "1"}}
-    events = graph.stream(
+    graph.invoke(
         {
             "messages": [
                 SystemMessage(content=SYSTEM),
                 HumanMessage(content=user_input)
             ]
         },
-
-        config={"configurable": {"thread_id": "1"}},
-        stream_mode="values"
+        config=config
     )
+    # 检查中断
+    snapshot = graph.get_state(config)
+    interrupt_value = (
+        snapshot.tasks[0]
+        .interrupts[0]
+        .value
+    )
+    print(interrupt_value)
+    # 用户审批
+    ans = input("Approve? (y/n): ")
+    # 回复中断-如果用户同意
+    result = graph.invoke(
+        Command(
+            resume=(ans.lower() == "y")
+        ),
+        config=config
+    )
+    # 最终回复
+    final_state = graph.get_state(config)
 
-    for event in events:
-        messages = event.get("messages", [])
-        if messages:
-            last = messages[-1]
+    messages = final_state.values["messages"]
 
-            # 只打印最终 AI 回复
-            if last.type == "ai" and not last.tool_calls:
-                print("\n🤖 FINAL ANSWER:")
-                print(last.content)
-        if "__interrupt__"in event:
-            interrupt_value = event["__interrupt__"].value
-            print(f"⚠️ 需要批准执行工具: {interrupt_value['tool']} {interrupt_value['args']}")
+    last_ai = None
 
-            # 用户输入
-            ans = input("Approve? (y/n): ").strip().lower()
-            if ans == "y":
-                # ✅ 用户批准，继续执行 Graph
-                resume_cmd = Command(resume=True)
-            else:
-                # ❌ 用户拒绝
-                resume_cmd = Command(resume=False)
+    for msg in reversed(messages):
+        if msg.type == "ai":
+            last_ai = msg
+            break
 
-            resume_events = graph.stream(resume_cmd, stream_mode="values")
-            for e in resume_events:
-                print(e)
+    if last_ai:
+        print("\n🤖 FINAL ANSWER")
+        print(last_ai.content)
+
 
 
 
