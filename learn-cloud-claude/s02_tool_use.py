@@ -148,7 +148,7 @@ builder.add_node("tools",ToolNode(tools))
 # 开始边
 builder.add_edge(START,"chatbot")
 # chatbot到条件边（结束or使用工具）
-builder.add_conditional_edges("chatbot",tools_condition,)
+builder.add_conditional_edges("chatbot",tools_condition)
 # 工具调用到chatbot边
 builder.add_edge("tools","chatbot")
 

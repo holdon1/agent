@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import TypedDict, Annotated
 
+
+from s01_agent_loop import AgentState
 from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
@@ -14,7 +16,7 @@ from langgraph.graph import StateGraph, END,START
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode,tools_condition
 from dotenv import load_dotenv
-
+from s03_permission_gate import permission_gate,route_after_chatbot
 
 
 load_dotenv()
@@ -27,8 +29,7 @@ import os
 # State
 # =========================
 
-class AgentState(TypedDict):
-    messages: Annotated[list[BaseMessage], add_messages]
+
 
 # =========================
 # Tool
@@ -142,19 +143,24 @@ builder = StateGraph(AgentState)
 # =========================
 builder.add_node("chatbot", chatbot)
 builder.add_node("tools",ToolNode(tools))
+builder.add_node("permission",permission_gate)
 # =========================
 # 注册边
 # =========================
 # 开始边
 builder.add_edge(START,"chatbot")
 # chatbot到条件边（结束or使用工具）
-builder.add_conditional_edges("chatbot",tools_condition,)
+builder.add_conditional_edges("chatbot",route_after_chatbot,
+                              {'permission':'permission',END:END})
+
+builder.add_edge("permission","tools")
 # 工具调用到chatbot边
 builder.add_edge("tools","chatbot")
 
 graph = builder.compile()
 
 if __name__ == '__main__':
+    user_input = "删除当前目录中的test.txt文件"
     SYSTEM = """
     你是一个终端Agent。
 
@@ -175,7 +181,7 @@ if __name__ == '__main__':
         {
             "messages": [
                 SystemMessage(content=SYSTEM),
-                HumanMessage(content="Create a file called test.py that prints hello, then read it back")
+                HumanMessage(content=user_input)
             ]
         },
         stream_mode="values"
