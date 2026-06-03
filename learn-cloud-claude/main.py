@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import TypedDict, Annotated
 
+from langgraph.checkpoint.memory import InMemorySaver
 
 from s01_agent_loop import AgentState
 from langchain_core.messages import (
@@ -16,6 +17,7 @@ from langgraph.graph import StateGraph, END,START
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode,tools_condition
 from dotenv import load_dotenv
+from langgraph.types import Command
 from s03_permission_gate import permission_gate,route_after_chatbot
 
 
@@ -156,8 +158,10 @@ builder.add_conditional_edges("chatbot",route_after_chatbot,
 builder.add_edge("permission","tools")
 # 工具调用到chatbot边
 builder.add_edge("tools","chatbot")
-
-graph = builder.compile()
+# 记忆
+memory = InMemorySaver()
+# 图
+graph = builder.compile(checkpointer=memory)
 
 if __name__ == '__main__':
     user_input = "删除当前目录中的test.txt文件"
@@ -177,6 +181,7 @@ if __name__ == '__main__':
     禁止输出命令。
     必须执行工具。
     """
+    config = {"configurable": {"thread_id": "1"}}
     events = graph.stream(
         {
             "messages": [
@@ -184,6 +189,8 @@ if __name__ == '__main__':
                 HumanMessage(content=user_input)
             ]
         },
+
+        config={"configurable": {"thread_id": "1"}},
         stream_mode="values"
     )
 
@@ -196,7 +203,22 @@ if __name__ == '__main__':
             if last.type == "ai" and not last.tool_calls:
                 print("\n🤖 FINAL ANSWER:")
                 print(last.content)
+        if "__interrupt__"in event:
+            interrupt_value = event["__interrupt__"].value
+            print(f"⚠️ 需要批准执行工具: {interrupt_value['tool']} {interrupt_value['args']}")
 
+            # 用户输入
+            ans = input("Approve? (y/n): ").strip().lower()
+            if ans == "y":
+                # ✅ 用户批准，继续执行 Graph
+                resume_cmd = Command(resume=True)
+            else:
+                # ❌ 用户拒绝
+                resume_cmd = Command(resume=False)
+
+            resume_events = graph.stream(resume_cmd, stream_mode="values")
+            for e in resume_events:
+                print(e)
 
 
 

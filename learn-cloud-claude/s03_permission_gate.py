@@ -62,8 +62,9 @@ def permission_gate(agentState:AgentState):
     ]} # 修改节点状态
     # 审批
     if level == PermissionLevel.ASK:
-
+        print("Requesting user approval...")
         approval = interrupt({
+
             "tool": tool_call["name"],
             "args": tool_call["args"]
         })
