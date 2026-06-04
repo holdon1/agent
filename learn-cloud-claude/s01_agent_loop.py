@@ -29,6 +29,8 @@ import os
 class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     pend_tool: dict|None
+    todos: list[dict]
+    todo_skip_count: int
 
 # =========================
 # Tool

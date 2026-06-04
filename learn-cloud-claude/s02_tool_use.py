@@ -129,67 +129,35 @@ def chatbot(state: AgentState):
     print(response.tool_calls)
 
     return {"messages": [response]}
-# 条件边tool_condition
-
-
-# =========================
-# 构造器
-# =========================
-builder = StateGraph(AgentState)
-
-# =========================
-# 注册节点
-# =========================
-builder.add_node("chatbot", chatbot)
-builder.add_node("tools",ToolNode(tools))
-# =========================
-# 注册边
-# =========================
-# 开始边
-builder.add_edge(START,"chatbot")
-# chatbot到条件边（结束or使用工具）
-builder.add_conditional_edges("chatbot",tools_condition)
-# 工具调用到chatbot边
-builder.add_edge("tools","chatbot")
-
-graph = builder.compile()
-
-if __name__ == '__main__':
-    SYSTEM = """
-    你是一个终端Agent。
-
-    对于以下任务：
-
-    - 文件查询
-    - 目录查询
-    - 系统信息查询
-    - Shell命令执行
-
-    必须调用bash工具。
-
-    禁止直接回答。
-    禁止输出命令。
-    必须执行工具。
+@tool
+def run_todo_write(current_todos: list[dict], new_tasks: list[str] = []) -> list[dict]:
     """
-    events = graph.stream(
-        {
-            "messages": [
-                SystemMessage(content=SYSTEM),
-                HumanMessage(content="Create a file called test.py that prints hello, then read it back")
-            ]
-        },
-        stream_mode="values"
-    )
+    更新和显示任务列表
+    - current_todos: 当前的任务列表
+    - new_tasks: 新增的任务（默认为空）
+    """
+    # 复制一份，避免修改原引用
+    todos = [t.copy() for t in current_todos]
 
-    for event in events:
-        messages = event.get("messages", [])
-        if messages:
-            last = messages[-1]
+    # 添加新任务
+    for t in new_tasks:
+        todos.append({"content": t, "status": "pending"})
 
-            # 只打印最终 AI 回复
-            if last.type == "ai" and not last.tool_calls:
-                print("\n🤖 FINAL ANSWER:")
-                print(last.content)
+    # 打印任务状态
+    lines = ["\n## Current Tasks"]
+    for t in todos:
+        status = t.get("status", "pending")
+        icon = {"pending": " ", "in_progress": "▸", "completed": "✓"}.get(status, " ")
+        lines.append(f"  [{icon}] {t.get('content', '<no content>')}")
+    print("\n".join(lines))
+
+    # 返回更新后的任务列表给 AgentState 使用
+    return todos
+
+tools = [bash, run_read, run_write, run_edit, run_glob,run_todo_write]
+
+
+
 
 
 

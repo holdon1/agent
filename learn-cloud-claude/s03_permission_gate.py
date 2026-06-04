@@ -53,7 +53,7 @@ def permission_gate(agentState:AgentState):
     tool_call = latest_ai_message.tool_calls[0]
     # 获取权限校验字段
     level = check_permission(tool_name=tool_call["name"],args=tool_call["args"])
-
+    print(f"level: {level}")
     if level == PermissionLevel.ALLOW:
         return {} # 不修改节点状态
     if level == PermissionLevel.DENY:
@@ -78,11 +78,18 @@ def permission_gate(agentState:AgentState):
                 AIMessage(content="User rejected operation")
             ]
         }
+    print("\n====== permission_gate end ======")
+    return {}
+
 # 权限路由
 def route_after_chatbot(agentState:AgentState):
-    latest_ai_message = agentState["messages"][-1]
-    if getattr(latest_ai_message,"tool_calls",None):
+    if agentState.get("todo_skip_count") >= 3 or agentState.get("todo_skip_count") == 0:
+        return "todo_write"
+
+    latest = agentState["messages"][-1]
+    if getattr(latest, "tool_calls", None):
         return "permission"
+
     return END
 
 
