@@ -40,7 +40,7 @@ def ask_user(tool_name: str, args: dict, reason: str) -> str:
     choice = input("   Allow? [y/N] ").strip().lower()
     return "allow" if choice in ("y", "yes") else "deny"
 
-def check_permission(tool_call) -> bool:
+def check_permission(tool_call) -> dict:
     tool_name = tool_call.function.name
     tool_input = json.loads(tool_call.function.arguments) # 工具参数
     # 闸门 1: 硬拒绝
@@ -48,16 +48,27 @@ def check_permission(tool_call) -> bool:
         reason = check_deny_list(str(tool_input))
         if reason:
             print(f"\n⛔ {reason}")
-            return False
+            return  {
+                    "decision": "deny",
+                    "reason": reason,
+                    }
 
     # 闸门 2 + 3: 规则匹配 → 用户审批
     reason = check_rules(tool_name, tool_input)
     if reason:
         decision = ask_user(tool_name, tool_input, reason)
         if decision == "deny":
-            return False
+            return {
+                    "decision": decision,
+                    "reason": reason,
+                    }
 
-    return True
+    return {
+        "decision": "allow",
+        "reason": "通过权限校验，允许调用工具",
+    }
+
 
 if __name__ == '__main__':
+
     print(check_deny_list("rm -rf /"))

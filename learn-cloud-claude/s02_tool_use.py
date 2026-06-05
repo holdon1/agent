@@ -1,3 +1,5 @@
+import ast
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -7,6 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 # 工具定义
 TOOLS = [
+    # bash
     {
         "type": "function",
         "function": {
@@ -22,6 +25,7 @@ TOOLS = [
             }
         }
     },
+    # read_file
     {
         "type": "function",
         "function": {
@@ -40,6 +44,7 @@ TOOLS = [
             }
         }
     },
+    # write_file
     {
         "type": "function",
         "function": {
@@ -58,6 +63,7 @@ TOOLS = [
             }
         }
     },
+    # edit_file
     {
         "type": "function",
         "function": {
@@ -79,6 +85,7 @@ TOOLS = [
             }
         }
     },
+    # glob
     {
         "type": "function",
         "function": {
@@ -95,6 +102,7 @@ TOOLS = [
             }
         }
     },
+    # tavily_search
     {
         "type": "function",
         "function": {
@@ -113,7 +121,34 @@ TOOLS = [
             }
         }
     },
+    # todo_write
+    {
+        "type": "function",
+        "function": {
+            "name": "todo_write",
+            "description": "Create and manage a task list for your current coding session.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "todos": {
+                        "type": "array",
+                        "description": "List of tasks.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "content": {"type": "string"},
+                                "status":{"type": "string",
+                                          "enum":["pending","in_progress","completed"]}
 
+                            },
+                            "required": ["content","status"]
+                        }
+                    },
+                },
+                "required": ["todos"]
+            }
+        }
+    }
 ]
 WORKDIR = Path.cwd()
 def safe_path(p: str) -> Path:
@@ -124,6 +159,7 @@ def safe_path(p: str) -> Path:
 
 # 工具执行
 def run_bash(command: str) -> str:
+    """进行文档综合操作"""
     dangerous = ["rm -rf /", "sudo", "shutdown", "reboot", "> /dev/"]
     if any(d in command for d in dangerous):
         return "Error: Dangerous command blocked"
@@ -160,7 +196,39 @@ def run_edit(path, old_text, new_text):
 def run_glob(pattern):
     import glob as g
     return "\n".join(g.glob(pattern, root_dir=WORKDIR))
-
+# to_do_write
+CURRENT_TODOS: list[dict]=[] # 当前任务列表
+def _normalize_todos(todos):
+    if isinstance(todos, str):
+        try:
+            todos = json.loads(todos)
+        except json.JSONDecodeError:
+            try:
+                todos = ast.literal_eval(todos)
+            except (SyntaxError, ValueError):
+                return None, "Error: todos must be a list or JSON array string"
+    if not isinstance(todos, list):
+        return None, "Error: todos must be a list"
+    for i, t in enumerate(todos):
+        if not isinstance(t, dict):
+            return None, f"Error: todos[{i}] must be an object"
+        if "content" not in t or "status" not in t:
+            return None, f"Error: todos[{i}] missing 'content' or 'status'"
+        if t["status"] not in ("pending", "in_progress", "completed"):
+            return None, f"Error: todos[{i}] has invalid status '{t['status']}'"
+    return todos, None
+def run_todo_write(todos: list) -> str:
+    global CURRENT_TODOS
+    todos, error = _normalize_todos(todos)
+    if error:
+        return error
+    CURRENT_TODOS = todos
+    lines = ["\n\033[33m## Current Tasks\033[0m"]
+    for t in CURRENT_TODOS:
+        icon = {"pending": " ", "in_progress": "\033[36m▸\033[0m", "completed": "\033[32m✓\033[0m"}[t["status"]]
+        lines.append(f"  [{icon}] {t['content']}")
+    print("\n".join(lines))
+    return f"Updated {len(CURRENT_TODOS)} tasks"
 # tavily
 client = TavilyClient(os.getenv("TAIL_API_KEY"))
 def tavily_search(query:str,max_results:int=5):
@@ -171,9 +239,15 @@ def tavily_search(query:str,max_results:int=5):
 # 工具映射
 TOOL_HANDLERS={
     "bash":run_bash,
-    "read":run_read,
-    "write":run_write,
-    "edit":run_edit,
+    "read_file":run_read,
+    "write_file":run_write,
+    "edit_file":run_edit,
     "glob":run_glob,
-    "search":tavily_search
+    "tavily_search":tavily_search,
+    "todo_write":run_todo_write
 }
+
+
+if __name__ == '__main__':
+    from utils.function_to_schema import function_to_schema
+    pass
