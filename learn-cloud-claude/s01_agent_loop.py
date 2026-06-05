@@ -4,7 +4,7 @@ from zai import ZhipuAiClient
 import os
 from dotenv import load_dotenv
 from s02_tool_use import TOOLS,TOOL_HANDLERS
-
+from s03_permission import check_permission
 
 load_dotenv()
 # 大模型客户端
@@ -16,7 +16,7 @@ SYSTEM_PROMPT = f"You are a coding agent at {os.getcwd()}. Use bash to solve tas
 def agent_loop_with_zhipu(messages:list):
     while True:
         # 大模型回复
-        print(TOOLS)
+        print(f"TOOLS:{TOOLS}")
         response = client.chat.completions.create(model=MODEL,tools=TOOLS,messages=messages,max_tokens=200)
 
         response_choice = response.choices[0]
@@ -29,8 +29,15 @@ def agent_loop_with_zhipu(messages:list):
 
         # 获取工具，工具名，工具参数
         tool_call = response_choice.message.tool_calls[0]
-        tool_name = tool_call.function.name # 工具名
+        if not check_permission(tool_call):  # ← 新增
+            messages.append({
+                "role":"tool",
+                "tool_call_id":tool_call.id,
+                "content":"Permission denied",
+            })
+            continue
 
+        tool_name = tool_call.function.name # 工具名
         tool_input = json.loads(tool_call.function.arguments) # 工具参数
 
         # 调用工具得到结果
