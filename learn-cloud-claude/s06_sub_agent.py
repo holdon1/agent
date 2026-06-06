@@ -1,15 +1,18 @@
-import ast
 import json
 import os
 import subprocess
 from pathlib import Path
 
 from tavily import TavilyClient
+from zai import ZhipuAiClient
+
+from s04_hooks import trigger_hook
 from dotenv import load_dotenv
 load_dotenv()
-# 工具定义
-TOOLS = [
-    # bash
+client = ZhipuAiClient(api_key=os.getenv("ZHIPU_API_KEY"))
+MODEL = os.getenv("ZHIPU_MODEL_ID")
+# 工具
+SUB_TOOLS = [# bash
     {
         "type": "function",
         "function": {
@@ -148,25 +151,8 @@ TOOLS = [
                 "required": ["todos"]
             }
         }
-    },
-    # task
-    {'type': 'function',
-     'function': {
-         'name': 'task',
-         'description': '"Launch a subagent to handle a complex subtask. Returns only the final conclusion.',
-         'parameters': {
-             'type': 'object',
-             'properties': {
-                 'description': {
-                     'type': 'string'
-                 }
-             },
-             'required': ['description']
-         }
-     }
-     }
-
-]
+    }]
+# 工具执行
 WORKDIR = Path.cwd()
 def safe_path(p: str) -> Path:
     path = (WORKDIR / p).resolve()
@@ -174,7 +160,6 @@ def safe_path(p: str) -> Path:
         raise ValueError(f"Path escapes workspace: {p}")
     return path
 
-# 工具执行
 def run_bash(command: str) -> str:
     """进行文档综合操作"""
     dangerous = ["rm -rf /", "sudo", "shutdown", "reboot", "> /dev/"]
@@ -247,26 +232,88 @@ def run_todo_write(todos: list) -> str:
     print("\n".join(lines))
     return f"Updated {len(CURRENT_TODOS)} tasks"
 # tavily
-client = TavilyClient(os.getenv("TAIL_API_KEY"))
+tavily_client = TavilyClient(os.getenv("TAIL_API_KEY"))
 def tavily_search(query:str,max_results:int=5):
     """搜索引擎工具"""
-    result = client.search(query=query,max_results=max_results)
+    result = tavily_client.search(query=query,max_results=max_results)
     return str(result)
-
-from s06_sub_agent import spawn_subagent
-# 工具映射
-TOOL_HANDLERS={
-    "bash":run_bash,
+SUB_TOOLS_HANDLERS = {"bash":run_bash,
     "read_file":run_read,
     "write_file":run_write,
     "edit_file":run_edit,
     "glob":run_glob,
     "tavily_search":tavily_search,
-    "todo_write":run_todo_write,
-    "task":spawn_subagent
-}
+    "todo_write":run_todo_write
+   }
 
+#
+def extract_text(content) -> str:
+    """Extract text from message content blocks."""
+    if not isinstance(content, list):
+        return str(content)
+    return "\n".join(getattr(b, "text", "") for b in content if getattr(b, "type", None) == "text")
+def spawn_subagent(description: str) -> str:
+    """"Launch a subagent to handle a complex subtask. Returns only the final conclusion."""
+    print(f"\n\033[35m[Subagent spawned]\033[0m")
+    messages = [{"role": "user", "content": description}]  # fresh context
+
+    for _ in range(30):  # safety limit
+        response = client.chat.completions.create(model=MODEL,tools=SUB_TOOLS,messages=messages,max_tokens=200)
+        response_choice = response.choices[0]
+        messages.append({"role": "assistant", "content": response_choice.message.content})
+        if not response_choice.message.tool_calls:
+            # 触发退出事件
+            result = trigger_hook("Stop", messages)
+            if result is not None:
+                messages.append({
+                    "role": "user",
+                    "content": str(result),
+                })
+            break
+
+        tool_call = response_choice.message.tool_calls[0]
+        print(f"sub_agent_tool_call:{tool_call}")
+        tool_name = tool_call.function.name  # 工具名
+        print(f"sub_agent_tool_call:{tool_name}")
+        tool_input = json.loads(tool_call.function.arguments)  # 工具参数
+        print(f"sub_agent_tool_call:{tool_input}")
+        result = trigger_hook("PreToolUse", tool_call)
+        if result is not None:
+            messages.append({
+                "role": "tool",
+                "content": str(result),
+                "tool_call_id": tool_call.id,
+            })
+            continue
+        handler = SUB_TOOLS_HANDLERS[tool_name]
+        output = handler(**tool_input) if handler else f"Unknown: {tool_name}"
+        print(f"output:{output[:200]}")
+
+        # 调用工具后出发工具事件
+        trigger_hook("PostToolUse", tool_call, output)
+
+        messages.append({
+            "role": "tool",
+            "content": output,
+            "tool_call_id": tool_call.id,
+        })
+
+
+    # Issue 5: fallback if safety limit hit during tool_use
+    result = extract_text(messages[-1]["content"])
+    if not result:
+        # last message is tool_result, look backwards for assistant text
+        for msg in reversed(messages):
+            if msg["role"] == "assistant":
+                result = extract_text(msg["content"])
+                if result:
+                    break
+        if not result:
+            result = "Subagent stopped after 30 turns without final answer."
+    print(f"Subagent result:{result[:200]}")
+    print(f"\033[35m[Subagent done]\033[0m")
+    return result  # only summary, entire message history discarded
 
 if __name__ == '__main__':
     from utils.function_to_schema import function_to_schema
-    pass
+    print(function_to_schema(spawn_subagent))

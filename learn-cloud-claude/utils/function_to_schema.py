@@ -48,5 +48,5 @@ def function_to_schema(func):
             }
         }
     }
-if __name__ == '__main__':
-    print(function_to_schema(()))
+
+
