@@ -6,26 +6,13 @@ import os
 from dotenv import load_dotenv
 from s02_tool_use import TOOLS,TOOL_HANDLERS
 from s04_hooks import HOOKS,trigger_hook
-
+from s07_skills import build_system
 load_dotenv()
 # 大模型客户端
 client = ZhipuAiClient(api_key=os.getenv("ZHIPU_API_KEY"))
 MODEL = os.getenv("ZHIPU_MODEL_ID")
-SYSTEM_PROMPT = f"""
-You are a coding agent at {os.getcwd()}.
+SYSTEM = build_system()
 
-Before any multi-step task:
-1. Create a todo list using todo_write.
-2. Execute tasks using available tools.
-
-IMPORTANT:
-- Never output shell commands as text.
-- If a command needs to run, call the bash tool.
-- If a file needs reading, call read_file.
-- If a file needs writing, call write_file.
-- Continue until the task is completed.
-- Do not stop after creating todos.
-"""
 rounds_since_todo = 0
 # agent核心循环
 def agent_loop_with_openai(messages:list):

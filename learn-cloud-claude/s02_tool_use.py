@@ -164,8 +164,23 @@ TOOLS = [
              'required': ['description']
          }
      }
+     },
+    # load_skill
+    {'type': 'function',
+     'function': {
+         'name': 'load_skill',
+         'description': ' get full skill details when needed',
+         'parameters': {
+             'type': 'object',
+             'properties': {
+                 'name': {
+                     'type': 'string'
+                 }
+             },
+             'required': ['name']
+         }
      }
-
+     }
 ]
 WORKDIR = Path.cwd()
 def safe_path(p: str) -> Path:
@@ -254,6 +269,7 @@ def tavily_search(query:str,max_results:int=5):
     return str(result)
 
 from s06_sub_agent import spawn_subagent
+from s07_skills import load_skill
 # 工具映射
 TOOL_HANDLERS={
     "bash":run_bash,
@@ -263,10 +279,13 @@ TOOL_HANDLERS={
     "glob":run_glob,
     "tavily_search":tavily_search,
     "todo_write":run_todo_write,
-    "task":spawn_subagent
+    "task":spawn_subagent,
+    "load_skill":load_skill,
 }
 
 
 if __name__ == '__main__':
     from utils.function_to_schema import function_to_schema
+    from s07_skills import load_skill
     pass
+

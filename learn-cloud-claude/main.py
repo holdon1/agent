@@ -1,15 +1,16 @@
 import os
 
-from s01_agent_loop import agent_loop_with_openai,SYSTEM_PROMPT
+from s01_agent_loop import agent_loop_with_openai,SYSTEM
 from s04_hooks import trigger_hook
 
 if __name__ == '__main__':
     # 调用agent_loop
-    SYSTEM_PROMPT = SYSTEM_PROMPT
+    SYSTEM = SYSTEM
+    print(f"SYSTEM:{SYSTEM}")
 
     # messages=[{"role":"system","content":SYSTEM_PROMPT},
     #           {"role":"user","content":"执行命令 pwd"}]
-    history = [{"role":"system","content":SYSTEM_PROMPT}]
+    history = [{"role":"system","content":SYSTEM}]
     while True:
         try:
             query = input("\033[36ms02 >> \033[0m")
