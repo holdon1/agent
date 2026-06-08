@@ -4,10 +4,10 @@ from pathlib import Path
 from zai import ZhipuAiClient
 import os
 from dotenv import load_dotenv
-from s02_tool_use import TOOLS,TOOL_HANDLERS
+from s02_tool_use import TOOLS,TOOL_HANDLERS,compact_history
 from s04_hooks import HOOKS,trigger_hook
 from s07_skills import build_system
-from s08_context_compact import snip_compact,micro_compact,tool_result_budget,compact_history,reactive_compact,estimate_size,CONTEXT_LIMIT
+from s08_context_compact import snip_compact,micro_compact,tool_result_budget,reactive_compact,estimate_size,CONTEXT_LIMIT
 from utils.collect_last_tool_results import collect_last_tool_results
 load_dotenv()
 # 大模型客户端

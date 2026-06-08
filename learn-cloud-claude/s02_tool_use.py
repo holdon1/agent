@@ -6,6 +6,8 @@ from pathlib import Path
 
 from tavily import TavilyClient
 from dotenv import load_dotenv
+from zai import ZhipuAiClient
+
 load_dotenv()
 # 工具定义
 TOOLS = [
@@ -180,7 +182,24 @@ TOOLS = [
              'required': ['name']
          }
      }
+     },
+    # compact
+    {'type': 'function',
+     'function': {
+         'name': 'compact',
+         'description': '保存当前对话，并让大模型生成摘要',
+         'parameters': {
+             'type': 'object',
+             'properties': {
+                 'messages': {
+                     'type': 'string'
+                 }
+             },
+             'required': ['messages']
+         }
      }
+     }
+
 ]
 WORKDIR = Path.cwd()
 print(f"WORKDIR: {WORKDIR}")
@@ -271,6 +290,46 @@ def tavily_search(query:str,max_results:int=5):
 
 from s06_sub_agent import spawn_subagent
 from s07_skills import load_skill
+
+# L4
+TRANSCRIPT_DIR = Path(".transcripts")
+def write_transcript(messages):
+    """
+    将当前对话写入磁盘，并返回对应磁盘路径
+    :param messages: 当前对话
+    :return: 磁盘路径
+    """
+    TRANSCRIPT_DIR.mkdir(parents=True, exist_ok=True)
+    path = TRANSCRIPT_DIR / f"transcript_{int(time.time())}.jsonl"
+    with path.open("w") as f:
+        for msg in messages: f.write(json.dumps(msg, default=str) + "\n")
+    return path
+
+def summarize_history(messages):
+    """
+    将当前对话总结成摘要
+    :param messages:
+    :return:
+    """
+    # 当前对话的前若干个字符
+    conversation = json.dumps(messages, default=str)[:80000]
+    # 提示词
+    prompt = ("Summarize this coding-agent conversation so work can continue.\n"
+              "Preserve: 1. current goal, 2. key findings/decisions, 3. files read/changed, "
+              "4. remaining work, 5. user constraints.\nBe compact but concrete.\n\n" + conversation)
+
+    client = ZhipuAiClient(api_key=os.getenv("ZHIPU_API_KEY"))
+    MODEL = os.getenv("ZHIPU_MODEL_ID")
+    # 大模型总结摘要
+    response = client.chat.completions.create(model=MODEL, tools=TOOLS, messages=prompt, max_tokens=200)
+    # 返回摘要
+    return response.choices[0].message.content.strip()
+def compact_history(messages):
+    """保存当前对话，并让大模型生成摘要"""
+    transcript_path = write_transcript(messages)
+    print(f"[transcript saved: {transcript_path}]")
+    summary = summarize_history(messages)
+    return [{"role": "user", "content": f"[Compacted]\n\n{summary}"}]
 # 工具映射
 TOOL_HANDLERS={
     "bash":run_bash,
@@ -282,11 +341,10 @@ TOOL_HANDLERS={
     "todo_write":run_todo_write,
     "task":spawn_subagent,
     "load_skill":load_skill,
+    "compact":compact_history
 }
-
 
 if __name__ == '__main__':
     from utils.function_to_schema import function_to_schema
-    from s07_skills import load_skill
-    pass
+
 
