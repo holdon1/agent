@@ -183,6 +183,7 @@ TOOLS = [
      }
 ]
 WORKDIR = Path.cwd()
+print(f"WORKDIR: {WORKDIR}")
 def safe_path(p: str) -> Path:
     path = (WORKDIR / p).resolve()
     if not path.is_relative_to(WORKDIR):
