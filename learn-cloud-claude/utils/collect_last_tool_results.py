@@ -7,8 +7,6 @@ def collect_last_tool_results(messages):
             results.append(msg)
         else:
             break
-
-    if len(results) == 0: return messages
     results.reverse()
     return results
 if __name__ == '__main__':

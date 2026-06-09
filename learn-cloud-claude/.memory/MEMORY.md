@@ -1,0 +1,2 @@
+- [python-style](python-style.md) — User prefers type hints
+- [user-preference-indentation](user-preference-indentation.md) — User preference for indentation using tabs

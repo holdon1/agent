@@ -9,11 +9,13 @@ from s04_hooks import HOOKS,trigger_hook
 from s07_skills import build_system
 from s08_context_compact import snip_compact,micro_compact,tool_result_budget,reactive_compact,estimate_size,CONTEXT_LIMIT
 from utils.collect_last_tool_results import collect_last_tool_results
+from s09_memory import build_system_with_memory, load_memories, extract_memories, consolidate_memories
+
 load_dotenv()
 # 大模型客户端
 client = ZhipuAiClient(api_key=os.getenv("ZHIPU_API_KEY"))
 MODEL = os.getenv("ZHIPU_MODEL_ID")
-SYSTEM = build_system()
+SYSTEM = build_system_with_memory()
 CONTEXT_LIMIT = CONTEXT_LIMIT
 MAX_REACTIVE_RETRIES = 1  # retry limit for reactive compact
 rounds_since_todo = 0
@@ -21,29 +23,45 @@ rounds_since_todo = 0
 def agent_loop_with_openai(messages:list):
     global rounds_since_todo
     reactive_retries = 0  # 兜底重试次数
+    memories_content = load_memories(messages)
+    memory_turn = len(messages) - 1 if messages and isinstance(messages[-1].get("content"), str) else None
     while True:
         # 大模型回复
         print(f"TOOLS:{TOOLS}")
+
+        # message快照，相当于当前messages备份
+        pre_compress = [m if isinstance(m, dict) else {"role": m.get("role", ""),
+                                                       "content": str(m.get("content", ""))} for m in messages]
+
         # 最后的工具调用结果集
         last_tool_results = collect_last_tool_results(messages)
         # L3
-        tool_result_budget(last_tool_results)
+        if last_tool_results:
+            tool_result_budget(last_tool_results)
         # L1
         messages[:] = snip_compact(messages)
         # L2
         messages[:] = micro_compact(messages)
-        # 经过预处理messages依然超过上下文容量
+
+        # 经过预处理messages依然超过上下文容量L4
         if estimate_size(messages) > CONTEXT_LIMIT:
             print("[auto compact ]")
             messages[:] = compact_history(messages)
 
         # 大模型回忆当前任务
         if rounds_since_todo >= 3 and messages:
-            messages.append({"role": "user",
-                             "content": "<reminder>Update your todos.</reminder>"})
+            messages.append({"role": "user","content": "<reminder>Update your todos.</reminder>"})
             rounds_since_todo = 0 # 计数器清0
         try:
-            response = client.chat.completions.create(model=MODEL,tools=TOOLS,messages=messages,max_tokens=200)
+            request_messages = messages
+            # 构造一个临时消息。
+            if memories_content and memory_turn is not None and memory_turn < len(messages):
+                request_messages = messages.copy()
+                request_messages[memory_turn] = {
+                    **messages[memory_turn],
+                    "content": memories_content + "\n\n" + messages[memory_turn]["content"],
+                }
+            response = client.chat.completions.create(model=MODEL,tools=TOOLS,messages=request_messages,max_tokens=200)
             reactive_retries = 0  # 大模型调用成功，重试次数清零
             print(f"response:{response}")
             response_choice = response.choices[0]
@@ -57,6 +75,8 @@ def agent_loop_with_openai(messages:list):
                     "tool_calls": response_choice.message.tool_calls,
                 }
             )
+            extract_memories(pre_compress)
+            consolidate_memories()
             # 是否使用工具
             if not response_choice.message.tool_calls:
                 # 触发退出事件
@@ -66,6 +86,7 @@ def agent_loop_with_openai(messages:list):
                         "role":"user",
                         "content":str(result),
                     })
+
                 return response_choice.message.content
 
             rounds_since_todo += 1 # 调用大模型，计数加一

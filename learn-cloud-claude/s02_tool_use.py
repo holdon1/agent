@@ -330,6 +330,8 @@ def compact_history(messages):
     print(f"[transcript saved: {transcript_path}]")
     summary = summarize_history(messages)
     return [{"role": "user", "content": f"[Compacted]\n\n{summary}"}]
+
+
 # 工具映射
 TOOL_HANDLERS={
     "bash":run_bash,

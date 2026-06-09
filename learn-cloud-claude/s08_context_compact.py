@@ -8,6 +8,7 @@ from scipy.ndimage import histogram
 from wasabi import msg
 from zai import ZhipuAiClient
 from dotenv import load_dotenv
+from s02_tool_use import summarize_history,write_transcript
 load_dotenv()
 CONTEXT_LIMIT = 50000
 KEEP_RECENT = 3
