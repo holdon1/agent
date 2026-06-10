@@ -10,29 +10,34 @@ from s07_skills import build_system
 from s08_context_compact import snip_compact,micro_compact,tool_result_budget,reactive_compact,estimate_size,CONTEXT_LIMIT
 from utils.collect_last_tool_results import collect_last_tool_results
 from s09_memory import build_system_with_memory, load_memories, extract_memories, consolidate_memories
-
+from s10_system_prompt import get_system_prompt,update_context
 load_dotenv()
 # 大模型客户端
 client = ZhipuAiClient(api_key=os.getenv("ZHIPU_API_KEY"))
 MODEL = os.getenv("ZHIPU_MODEL_ID")
-SYSTEM = build_system_with_memory()
+
 CONTEXT_LIMIT = CONTEXT_LIMIT
 MAX_REACTIVE_RETRIES = 1  # retry limit for reactive compact
 rounds_since_todo = 0
 # agent核心循环
-def agent_loop_with_openai(messages:list):
+def agent_loop_with_openai(messages:list,context:dict):
+
     global rounds_since_todo
     reactive_retries = 0  # 兜底重试次数
     memories_content = load_memories(messages)
     memory_turn = len(messages) - 1 if messages and isinstance(messages[-1].get("content"), str) else None
+    system = get_system_prompt(context)
+    print(f"system_prompt:{system}")
+    messages = [{"role":"system","content":system}] + messages
+    print(f"messages:{messages}")
     while True:
+
         # 大模型回复
         print(f"TOOLS:{TOOLS}")
-
+        #====压缩上下文===
         # message快照，相当于当前messages备份
         pre_compress = [m if isinstance(m, dict) else {"role": m.get("role", ""),
-                                                       "content": str(m.get("content", ""))} for m in messages]
-
+                                                    "content": str(m.get("content", ""))} for m in messages]
         # 最后的工具调用结果集
         last_tool_results = collect_last_tool_results(messages)
         # L3
@@ -61,7 +66,12 @@ def agent_loop_with_openai(messages:list):
                     **messages[memory_turn],
                     "content": memories_content + "\n\n" + messages[memory_turn]["content"],
                 }
-            response = client.chat.completions.create(model=MODEL,tools=TOOLS,messages=request_messages,max_tokens=200)
+
+            #======调用大模型======
+            response = client.chat.completions.create(model=MODEL,
+                                                      tools=TOOLS,
+                                                      messages=request_messages,
+                                                      max_tokens=200)
             reactive_retries = 0  # 大模型调用成功，重试次数清零
             print(f"response:{response}")
             response_choice = response.choices[0]
@@ -127,6 +137,11 @@ def agent_loop_with_openai(messages:list):
                     "content":output,
                     "tool_call_id":tool_call.id,
                 })
+
+                # =====更新上下文和系统提示此=====
+                context = update_context(context)
+                system = get_system_prompt(context)
+
         except Exception as e:
             if ("prompt_too_long" in str(e).lower() or "too many tokens" in str(
                     e).lower()) and reactive_retries < MAX_REACTIVE_RETRIES:
@@ -135,6 +150,8 @@ def agent_loop_with_openai(messages:list):
                 reactive_retries += 1
                 continue
             raise
+
+
 
 
 

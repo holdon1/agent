@@ -1,2 +1,4 @@
 - [python-style](python-style.md) — User prefers type hints
 - [user-preference-indentation](user-preference-indentation.md) — User preference for indentation using tabs
+- [user-preference-prompts](user-preference-prompts.md) — User preference for system prompts
+- [user-preference-tools](user-preference-tools.md) — User query about available tools
