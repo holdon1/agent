@@ -1,4 +1,7 @@
+- [project-fact-system-context-capacity](project-fact-system-context-capacity.md) — Query about system context capacity
 - [python-style](python-style.md) — User prefers type hints
+- [user-preference-context-window](user-preference-context-window.md) — User query about the size of the context window
+- [user-preference-greeting](user-preference-greeting.md) — User greeting to the system
 - [user-preference-indentation](user-preference-indentation.md) — User preference for indentation using tabs
 - [user-preference-prompts](user-preference-prompts.md) — User preference for system prompts
 - [user-preference-tools](user-preference-tools.md) — User query about available tools
